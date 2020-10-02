@@ -1,0 +1,17 @@
+use BASE2
+
+
+
+DROP TABLE Cliente
+DROP TABLE Compra
+DROP TABLE Sucursal
+DROP TABLE Auto
+DROP TABLE Modelo
+DROP TABLE Tipo_Auto
+DROP TABLE Tipo_Caja
+DROP TABLE Tipo_Motor
+DROP TABLE Tipo_transmision
+DROP TABLE Fabricante
+DROP TABLE Auto_Parte
+DROP TABLE Factura
+DROP TABLE Stock
