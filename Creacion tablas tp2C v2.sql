@@ -86,7 +86,6 @@ create table Auto_Parte(
 	auto_parte_descripcion nvarchar(255) null,
 	auto_parte_fabricante_id int FOREIGN KEY REFERENCES Fabricante (fabricante_id) null,);
 	
-
 	
 
 create table Stock(
@@ -94,6 +93,14 @@ create table Stock(
 	stock_auto_parte_id int null FOREIGN KEY REFERENCES Auto_Parte (auto_parte_id),
 	stock_sucursal_id int null FOREIGN KEY REFERENCES Sucursal (sucursal_id),
 	stock_cant decimal(18,0) null
-	,);
+);
+
+-- Insersión de datos
+
+SET IDENTITY_INSERT GD2C2020.dbo.Tipo_Auto ON 
+INSERT INTO dbo.Tipo_Auto(tipo_auto_id, tipo_auto_desc)
+SELECT DISTINCT TIPO_AUTO_CODIGO, TIPO_AUTO_DESC
+FROM gd_esquema.Maestra
+WHERE TIPO_AUTO_CODIGO IS NOT NULL
 
 
