@@ -88,7 +88,6 @@ GO
 create table GDD.COMPRA(
 	compra_id int identity(1,1) not null PRIMARY KEY,
 	compra_numero decimal(18,0) null,
-	compra_auto int ,
 	compra_factura int ,
 	compra_sucursal int,
 	compra_fecha datetime2(3) null,
@@ -207,6 +206,22 @@ GO
 
 
 
+/***************************
+ *   CREACION DE INDICES   *
+ ***************************/
+
+CREATE INDEX CLIENTE_DNI_APELLIDO ON GDD.CLIENTE(clie_dni, clie_apellido)
+GO
+
+CREATE INDEX SUCURSAL_CIUDAD ON GDD.SUCURSAL(sucursal_ciudad)
+GO
+
+CREATE INDEX FABRICANTE_NOMBRE ON GDD.FABRICANTE(fabricante_nombre)
+GO
+
+CREATE INDEX FACTURA_NUMERO ON GDD.FACTURA(factura_numero)
+GO
+
 /*********************************
  *   SPs DE MIGRACION DE DATOS   *
  *********************************/
@@ -282,10 +297,66 @@ GO
 
 CREATE PROCEDURE GDD.migrar_cliente
 AS
-INSERT INTO GDD.CLIENTE(clie_nombre, clie_direccion, clie_dni, clie_mail, clie_fecha_nac)
-SELECT DISTINCT CLIENTE_NOMBRE, CLIENTE_APELLIDO, CLIENTE_DNI, CLIENTE_MAIL, CLIENTE_FECHA_NAC
+INSERT INTO GDD.CLIENTE(clie_nombre, clie_apellido, clie_direccion, clie_dni, clie_mail, clie_fecha_nac)
+SELECT DISTINCT CLIENTE_NOMBRE, CLIENTE_APELLIDO, CLIENTE_DIRECCION, CLIENTE_DNI, CLIENTE_MAIL, CLIENTE_FECHA_NAC
 FROM gd_esquema.MAESTRA
 WHERE CLIENTE_DNI IS NOT NULL
+UNION
+SELECT DISTINCT FAC_CLIENTE_NOMBRE, FAC_CLIENTE_APELLIDO, FAC_CLIENTE_DIRECCION, FAC_CLIENTE_DNI, FAC_CLIENTE_MAIL, FAC_CLIENTE_FECHA_NAC
+FROM gd_esquema.MAESTRA
+WHERE FAC_CLIENTE_DNI IS NOT NULL
+GO
+
+IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_factura' AND type='p')
+	DROP PROCEDURE GDD.migrar_factura
+GO
+
+CREATE PROCEDURE GDD.migrar_factura
+AS
+INSERT INTO GDD.FACTURA(factura_numero, factura_clie, factura_fecha)
+SELECT DISTINCT FACTURA_NRO, (SELECT clie_id FROM GDD.CLIENTE WHERE clie_dni = A.FAC_CLIENTE_DNI AND clie_apellido = A.FAC_CLIENTE_APELLIDO), FACTURA_FECHA
+FROM gd_esquema.MAESTRA A
+WHERE FACTURA_NRO IS NOT NULL
+GO
+
+IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_sucursal' AND type='p')
+	DROP PROCEDURE GDD.migrar_sucursal
+GO
+
+CREATE PROCEDURE GDD.migrar_sucursal
+AS
+INSERT INTO GDD.SUCURSAL(sucursal_ciudad, sucursal_direccion, sucursal_mail, sucursal_telefono)
+SELECT DISTINCT SUCURSAL_CIUDAD, SUCURSAL_DIRECCION, SUCURSAL_MAIL, SUCURSAL_TELEFONO
+FROM gd_esquema.MAESTRA
+WHERE SUCURSAL_CIUDAD IS NOT NULL
+UNION
+SELECT DISTINCT FAC_SUCURSAL_CIUDAD, FAC_SUCURSAL_DIRECCION, FAC_SUCURSAL_MAIL, FAC_SUCURSAL_TELEFONO
+FROM gd_esquema.MAESTRA
+WHERE FAC_SUCURSAL_CIUDAD IS NOT NULL
+GO
+
+IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_fabricante' AND type='p')
+	DROP PROCEDURE GDD.migrar_fabricante
+GO
+
+CREATE PROCEDURE GDD.migrar_fabricante
+AS
+INSERT INTO GDD.FABRICANTE(fabricante_nombre)
+SELECT DISTINCT FABRICANTE_NOMBRE
+FROM gd_esquema.MAESTRA
+GO
+
+IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_compras' AND type='p')
+	DROP PROCEDURE GDD.migrar_compras
+GO
+
+CREATE PROCEDURE GDD.migrar_compras
+AS
+INSERT INTO GDD.COMPRA(compra_factura, compra_sucursal, compra_fecha, compra_numero, compra_precio, compra_cant)
+SELECT DISTINCT (SELECT factura_id from GDD.FACTURA where A.FACTURA_NRO = factura_numero),
+ (SELECT sucursal_id from GDD.SUCURSAL where A.SUCURSAL_CIUDAD = sucursal_ciudad), COMPRA_FECHA, COMPRA_NRO, COMPRA_PRECIO, COMPRA_CANT
+FROM gd_esquema.MAESTRA A
+WHERE COMPRA_NRO IS NOT NULL
 GO
 
 IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_maestra' AND type='p')
@@ -300,6 +371,10 @@ EXEC GDD.migrar_tipo_caja
 EXEC GDD.migrar_tipo_transmision
 EXEC GDD.migrar_modelo
 EXEC GDD.migrar_cliente
+EXEC GDD.migrar_factura
+EXEC GDD.migrar_sucursal
+EXEC GDD.migrar_fabricante
+EXEC GDD.migrar_compras
 GO
 
 
