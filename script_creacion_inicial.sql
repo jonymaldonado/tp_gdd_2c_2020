@@ -24,10 +24,19 @@ create table GDD.FACTURA (
 	factura_id int identity(1,1) not null PRIMARY KEY,
 	factura_fecha datetime2(3) null,
 	factura_clie int null,
-	factura_numero decimal(18,0)null 
+	factura_numero decimal(18,0) null,
+	factura_total decimal(18,0) null
 )
 GO
 
+create table GDD.ITEM_FACTURA (
+    item_factura_id int identity(1,1) not null PRIMARY KEY,
+	item_cantidad decimal(18,0) null,
+	item_precio decimal(18,0) null,
+	factura int null,
+	item_factura_auto_parte decimal(18,0) null
+)
+GO
 
 create table GDD.SUCURSAL (
 	sucursal_id int identity(1,1) not null PRIMARY KEY,
@@ -87,18 +96,26 @@ GO
 	
 create table GDD.COMPRA(
 	compra_id int identity(1,1) not null PRIMARY KEY,
+	compra_clie int null,
 	compra_numero decimal(18,0) null,
-	compra_factura int ,
 	compra_sucursal int,
 	compra_fecha datetime2(3) null,
 	compra_precio decimal(18,0) null,
-	compra_cant decimal(18,0) null
 )
 GO
 
+create table GDD.ITEM_COMPRA(
+    item_compra_id int identity(1,1) not null PRIMARY KEY,
+	compra int null,
+	item_compra_auto_parte decimal(18,0) null,
+	item_compra_cant decimal(18,0) null,
+	item_compra_precio decimal(18,0) null
+)
+GO
 
 CREATE TABLE GDD.AUTO(
 	auto_id  int identity(1,1) PRIMARY KEY not null,
+	auto_factura int null,
 	auto_compra int,
 	auto_modelo decimal(18,0),
 	auto_nro_chasis	nvarchar(50) null,
@@ -114,12 +131,19 @@ create table GDD.AUTO_PARTE(
 	auto_parte_id decimal(18,0) PRIMARY KEY not null,
 	auto_parte_descripcion nvarchar(255) null,
 	auto_parte_fabricante int null,
-	auto_parte_compra int null,
 	auto_parte_modelo decimal(18,0) null
 )
 GO
 
+create table GDD.ITEM_FACTURA_AUTO(
+    item_factura_auto_id int identity(1,1) PRIMARY KEY not null,
+	item_factura_auto_factura int null,
+	auto int null,
+	item_factura_auto_precio decimal(18,0) null
 
+)
+
+/*
 create table GDD.STOCK(
 	stock_id int identity(1,1) PRIMARY KEY not null,
 	stock_auto_parte_id decimal(18,0) null,
@@ -127,7 +151,7 @@ create table GDD.STOCK(
 	stock_cant decimal(18,0) null
 )
 GO
-
+*/
 
 
 /***********************************
@@ -160,15 +184,11 @@ FOREIGN KEY (auto_parte_fabricante) REFERENCES GDD.FABRICANTE(fabricante_id)
 GO 
 
 ALTER TABLE GDD.AUTO_PARTE
-ADD CONSTRAINT FK_auto_parte_compra
-FOREIGN KEY (auto_parte_compra) REFERENCES GDD.COMPRA(compra_id)
-GO 
-
-ALTER TABLE GDD.AUTO_PARTE
 ADD CONSTRAINT FK_auto_parte_modelo
 FOREIGN KEY (auto_parte_modelo) REFERENCES GDD.MODELO(modelo_codigo)
 GO 
 
+/*
 ALTER TABLE GDD.STOCK
 ADD CONSTRAINT FK_stock_auto_parte
 FOREIGN KEY (stock_auto_parte_id) REFERENCES GDD.AUTO_PARTE(auto_parte_id)
@@ -178,11 +198,20 @@ ALTER TABLE GDD.STOCK
 ADD CONSTRAINT FK_stock_sucursal
 FOREIGN KEY (stock_sucursal_id) REFERENCES GDD.SUCURSAL(sucursal_id)
 GO 
+*/
 
 ALTER TABLE GDD.FACTURA
 ADD CONSTRAINT FK_factura_cliente
 FOREIGN KEY (factura_clie) REFERENCES GDD.CLIENTE(clie_id)
 GO
+
+ALTER TABLE GDD.ITEM_FACTURA
+ADD CONSTRAINT FK_factura_item
+FOREIGN KEY (factura) REFERENCES GDD.FACTURA(factura_id)
+
+ALTER TABLE GDD.ITEM_FACTURA
+ADD CONSTRAINT FK_auto_parte_item
+FOREIGN KEY (item_factura_auto_parte) REFERENCES GDD.AUTO_PARTE(auto_parte_id)
 
 ALTER TABLE GDD.COMPRA
 ADD CONSTRAINT FK_compra_sucursal
@@ -190,21 +219,39 @@ FOREIGN KEY (compra_sucursal) REFERENCES GDD.SUCURSAL(sucursal_id)
 GO 
 
 ALTER TABLE GDD.COMPRA
-ADD CONSTRAINT FK_compra_factura
-FOREIGN KEY (compra_factura) REFERENCES GDD.CLIENTE(clie_id)
-GO 
+ADD CONSTRAINT FK_compra_cliente
+FOREIGN KEY (compra_clie) REFERENCES GDD.CLIENTE(clie_id)
+GO
+
+ALTER TABLE GDD.ITEM_COMPRA
+ADD CONSTRAINT FK_item_compra_auto_parte
+FOREIGN KEY (item_compra_auto_parte) REFERENCES GDD.AUTO_PARTE(auto_parte_id)
+GO
+
+ALTER TABLE GDD.ITEM_COMPRA
+ADD CONSTRAINT FK_item_compra_compra
+FOREIGN KEY (compra) REFERENCES GDD.COMPRA(compra_id)
+GO    
 
 ALTER TABLE GDD.AUTO
 ADD CONSTRAINT FK_auto_compra
 FOREIGN KEY (auto_compra) REFERENCES GDD.COMPRA(compra_id)
-GO 
+GO
 
 ALTER TABLE GDD.AUTO
 ADD CONSTRAINT FK_auto_modelo
 FOREIGN KEY (auto_modelo) REFERENCES GDD.MODELO(modelo_codigo)
 GO 
 
+ALTER TABLE GDD.ITEM_FACTURA_AUTO
+ADD CONSTRAINT FK_facturaAuto_factura
+FOREIGN KEY (item_factura_auto_factura) REFERENCES GDD.Factura(factura_id)
+GO 
 
+ALTER TABLE GDD.ITEM_FACTURA_AUTO
+ADD CONSTRAINT FK_facturaAuto_auto
+FOREIGN KEY (auto) REFERENCES GDD.AUTO(auto_id)
+GO 
 
 /***************************
  *   CREACION DE INDICES   *
@@ -313,10 +360,12 @@ GO
 
 CREATE PROCEDURE GDD.migrar_factura
 AS
-INSERT INTO GDD.FACTURA(factura_numero, factura_clie, factura_fecha)
-SELECT DISTINCT FACTURA_NRO, (SELECT clie_id FROM GDD.CLIENTE WHERE clie_dni = A.FAC_CLIENTE_DNI AND clie_apellido = A.FAC_CLIENTE_APELLIDO), FACTURA_FECHA
+INSERT INTO GDD.FACTURA(factura_numero, factura_clie, factura_fecha, factura_total)
+SELECT DISTINCT FACTURA_NRO, (SELECT clie_id FROM GDD.CLIENTE WHERE clie_dni = A.FAC_CLIENTE_DNI AND clie_apellido = A.FAC_CLIENTE_APELLIDO), 
+       A.FACTURA_FECHA, SUM(A.PRECIO_FACTURADO)
 FROM gd_esquema.MAESTRA A
 WHERE FACTURA_NRO IS NOT NULL
+GROUP BY FACTURA_NRO, FACTURA_FECHA, FAC_CLIENTE_APELLIDO, FAC_CLIENTE_DNI
 GO
 
 IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_sucursal' AND type='p')
@@ -346,18 +395,86 @@ SELECT DISTINCT FABRICANTE_NOMBRE
 FROM gd_esquema.MAESTRA
 GO
 
+IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_auto_parte' AND type='p')
+	DROP PROCEDURE GDD.migrar_auto_parte
+GO
+
+CREATE PROCEDURE GDD.migrar_auto_parte
+AS
+INSERT INTO GDD.AUTO_PARTE(auto_parte_id, auto_parte_descripcion,auto_parte_fabricante, auto_parte_modelo)
+SELECT DISTINCT M.AUTO_PARTE_CODIGO, M.AUTO_PARTE_DESCRIPCION, (SELECT fabricante_id FROM GDD.FABRICANTE WHERE fabricante_nombre = M.FABRICANTE_NOMBRE),
+       (SELECT modelo_codigo FROM GDD.MODELO WHERE modelo_codigo = M.MODELO_CODIGO)
+FROM gd_esquema.MAESTRA M
+WHERE M.AUTO_PARTE_DESCRIPCION is NOT NULL
+GO
+
+IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_auto' AND type='p')
+	DROP PROCEDURE GDD.migrar_auto
+GO
+
+CREATE PROCEDURE GDD.migrar_auto
+AS
+INSERT INTO GDD.AUTO(auto_cant_kms, auto_compra, auto_fecha_alta, auto_modelo, auto_nro_chasis, auto_nro_motor, auto_patente)
+SELECT DISTINCT M.AUTO_CANT_KMS, (SELECT compra_id FROM GDD.COMPRA WHERE compra_numero = M.COMPRA_NRO),  
+       M.AUTO_FECHA_ALTA, M.MODELO_CODIGO, M.AUTO_NRO_CHASIS, M.AUTO_NRO_MOTOR, M.AUTO_PATENTE
+FROM gd_esquema.MAESTRA M
+WHERE M.AUTO_PARTE_CODIGO is NULL
+GO
+
+IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_item_factura_auto' AND type='p')
+	DROP PROCEDURE GDD.migrar_item_factura_auto
+GO
+
+CREATE PROCEDURE GDD.migrar_item_factura_auto
+AS
+INSERT INTO GDD.ITEM_FACTURA_AUTO(item_factura_auto_factura, auto, item_factura_auto_precio)
+SELECT (SELECT factura_id FROM GDD.FACTURA WHERE factura_numero = M.FACTURA_NRO),
+       (SELECT auto_id FROM GDD.AUTO WHERE auto_nro_motor = M.AUTO_NRO_MOTOR AND M.FACTURA_NRO IS NOT NULL), M.PRECIO_FACTURADO
+FROM gd_esquema.MAESTRA M
+WHERE M.AUTO_PARTE_CODIGO is NULL AND M.FACTURA_NRO IS NOT NULL
+GO
+
 IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_compras' AND type='p')
 	DROP PROCEDURE GDD.migrar_compras
 GO
 
 CREATE PROCEDURE GDD.migrar_compras
 AS
-INSERT INTO GDD.COMPRA(compra_factura, compra_sucursal, compra_fecha, compra_numero, compra_precio, compra_cant)
-SELECT DISTINCT (SELECT factura_id from GDD.FACTURA where A.FACTURA_NRO = factura_numero),
- (SELECT sucursal_id from GDD.SUCURSAL where A.SUCURSAL_CIUDAD = sucursal_ciudad), COMPRA_FECHA, COMPRA_NRO, COMPRA_PRECIO, COMPRA_CANT
-FROM gd_esquema.MAESTRA A
+INSERT INTO GDD.COMPRA(compra_clie,compra_fecha, compra_numero, compra_precio, compra_sucursal)
+SELECT DISTINCT (SELECT clie_id FROM GDD.Cliente WHERE M.CLIENTE_DNI = clie_dni AND M.CLIENTE_APELLIDO = clie_apellido),
+       M.COMPRA_FECHA, M.COMPRA_NRO, SUM(M.COMPRA_PRECIO), (SELECT sucursal_id from GDD.SUCURSAL where M.SUCURSAL_CIUDAD = sucursal_ciudad AND M.SUCURSAL_DIRECCION = sucursal_direccion)        
+FROM gd_esquema.MAESTRA M
 WHERE COMPRA_NRO IS NOT NULL
+GROUP BY M.COMPRA_FECHA, M.COMPRA_NRO, M.CLIENTE_DNI, M.CLIENTE_APELLIDO, M.SUCURSAL_CIUDAD, M.SUCURSAL_DIRECCION
+ORDER BY COMPRA_NRO
 GO
+
+IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_item_compra' AND type='p')
+	DROP PROCEDURE GDD.migrar_item_compra
+GO
+
+CREATE PROCEDURE GDD.migrar_item_compra
+AS
+INSERT INTO GDD.ITEM_COMPRA(item_compra_auto_parte, item_compra_cant, item_compra_precio, compra)
+SELECT DISTINCT (SELECT auto_parte_id FROM GDD.AUTO_PARTE WHERE auto_parte_id = M.AUTO_PARTE_CODIGO), M.COMPRA_CANT, COMPRA_PRECIO,
+       (SELECT compra_id FROM GDD.COMPRA WHERE compra_numero = M.COMPRA_NRO)
+FROM gd_esquema.MAESTRA M
+WHERE COMPRA_CANT IS NOT NULL
+GO
+
+IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_item_factura' AND type='p')
+	DROP PROCEDURE GDD.migrar_item_factura
+GO
+
+CREATE PROCEDURE GDD.migrar_item_factura
+AS
+INSERT INTO GDD.ITEM_FACTURA(item_cantidad, item_factura_auto_parte, factura, item_precio)
+SELECT M.CANT_FACTURADA, (SELECT auto_parte_id FROM GDD.AUTO_PARTE WHERE auto_parte_id = M.AUTO_PARTE_CODIGO),
+       (SELECT factura_id FROM GDD.FACTURA WHERE factura_numero = M.FACTURA_NRO), M.PRECIO_FACTURADO
+FROM gd_esquema.MAESTRA M
+WHERE M.AUTO_PARTE_CODIGO IS NOT NULL AND M.PRECIO_FACTURADO IS NOT NULL
+GO
+
 
 IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_maestra' AND type='p')
 	DROP PROCEDURE GDD.migrar_maestra
@@ -375,8 +492,24 @@ EXEC GDD.migrar_factura
 EXEC GDD.migrar_sucursal
 EXEC GDD.migrar_fabricante
 EXEC GDD.migrar_compras
+EXEC GDD.migrar_auto_parte
+EXEC GDD.migrar_auto
+EXEC GDD.migrar_item_compra
+EXEC GDD.migrar_item_factura
+EXEC GDD.migrar_item_factura_auto
 GO
 
 
 EXEC GDD.migrar_maestra
 
+/*
+select * from GDD.TIPO_AUTO
+select * from GDD.COMPRA
+select * from GDD.AUTO
+select * from GDD.AUTO_PARTE
+select * from GDD.ITEM_COMPRA
+select * from GDD.ITEM_FACTURA
+select * from GDD.ITEM_FACTURA_AUTO
+select * from GDD.FACTURA
+select * from GDD.SUCURSAL
+*/
