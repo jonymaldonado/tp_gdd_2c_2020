@@ -1,68 +1,6 @@
 USE GD2C2020
 GO
  
---script_creacion_BI
-
------------------------------------------DROP TABLES-----------------------------------------
-CREATE PROCEDURE GDD.DROP_TABLES
-AS BEGIN
-	
-	DROP PROCEDURE GDD.CREAR_DIMENSIONES
-	DROP PROCEDURE GDD.CREAR_HECHOS
-	DROP PROCEDURE GDD.CREAR_PK
-	DROP PROCEDURE GDD.CREAR_FK
-	DROP PROCEDURE GDD.CARGAR_DIMENSIONES
-	DROP PROCEDURE GDD.CARGAR_HECHOS_AUTOMOVILES
-	DROP PROCEDURE GDD.CARGAR_HECHOS_AUTO_PARTES
-
-	DROP TABLE GDD.BI_Fact_Compra_Automoviles
-
-	DROP TABLE GDD.BI_Fact_Ventas_Automoviles
-
-	DROP TABLE GDD.BI_Fact_Compra_Auto_Partes
-
-	DROP TABLE GDD.BI_Fact_Ventas_Auto_Partes
-	
-
-	DROP TABLE GDD.BI_Dim_Tiempo
-
-	DROP TABLE GDD.BI_Dim_Cliente
-
-	DROP TABLE GDD.BI_Dim_Sucursal
-
-	DROP TABLE GDD.BI_Dim_Modelo
-
-	DROP TABLE GDD.BI_Dim_Fabricante
-
-	DROP TABLE GDD.BI_Dim_TipoAutomovil
-
-	DROP TABLE GDD.BI_Dim_TipoCajaCambios
-
-	--TODO
-	--DROP TABLE BI_GDD.Dim_CantidadCambios
-
-	DROP TABLE GDD.BI_Dim_TipoMotor
-
-	DROP TABLE GDD.BI_Dim_TipoTransmision
-
-	DROP TABLE GDD.BI_Dim_Potencia
-
-	DROP TABLE GDD.BI_Dim_AutoParte
-
-	--TODO
-	--DROP TABLE GDD.BI_Dim_RubroAutoParte
-
-
-	DROP FUNCTION GDD.CALCULAR_EDAD
-	DROP FUNCTION GDD.CALCULAR_RANGO_EDAD
-	DROP FUNCTION GDD.CALCULAR_POTENCIA
-END
-GO
-
---DROP PROCEDURE GDD.DROP_TABLES
---EXEC GDD.DROP_TABLES
-
-
 -----------------------------------------Funciones Auxiliares-----------------------------------------
 
 CREATE FUNCTION GDD.CALCULAR_EDAD(@fecha_nac DATETIME2(3))
@@ -589,7 +527,7 @@ GO
 CREATE PROCEDURE GDD.CARGAR_HECHOS_AUTO_PARTES
 AS BEGIN 
 	
-	INSERT INTO GDD.BI_Dim_Compra_AutoParte
+	INSERT INTO GDD.BI_Fact_Compra_Auto_Partes
 	SELECT
 			T.tiem_id,
 			DC.clie_id,
@@ -621,10 +559,9 @@ AS BEGIN
 				JOIN GDD.BI_Dim_TipoTransmision DTT ON DTT.tipoTransmision_id = M.modelo_tipo_transmision
 			JOIN GDD.BI_Dim_Potencia DP ON DP.potencia_rango = GDD.CALCULAR_POTENCIA(M.modelo_potencia)
 			JOIN GDD.BI_Dim_Fabricante DF ON DF.fabr_id = A.autoParte_fabricante
-
+		
 		GROUP BY T.tiem_id, DC.clie_id, DS.sucu_id, DM.mode_codigo, DTA.tipoAutomovil_id, DTC.tipoCaja_id, 
 			DTM.tipoMotor_id, DTT.tipoTransmision_id, DP.potencia_id, A.autoParte_id, DF.fabr_id
-
 
 	INSERT INTO GDD.BI_Fact_Ventas_Auto_Partes
 	SELECT
@@ -676,6 +613,7 @@ AS BEGIN
 END
 GO
 
+
 -----------------------------------------Ejecutar procedures-----------------------------------------
 EXEC GDD.CREAR_DIMENSIONES
 EXEC GDD.CREAR_HECHOS
@@ -685,31 +623,4 @@ EXEC GDD.CREAR_FK
 
 EXEC GDD.CARGAR_DIMENSIONES
 EXEC GDD.CARGAR_HECHOS_AUTOMOVILES
-
-
-
---SELECT * FROM GDD.AUTO_PARTE
---	JOIN GDD.ITEM_COMPRA I ON item_compra_auto_parte = auto_parte_id
---	JOIN GDD.COMPRA C ON I.compra = C.compra_id
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+EXEC GDD.CARGAR_HECHOS_AUTO_PARTES
