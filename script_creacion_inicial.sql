@@ -25,7 +25,8 @@ create table GDD.FACTURA (
 	factura_fecha datetime2(3) null,
 	factura_clie int null,
 	factura_numero decimal(18,0) null,
-	factura_total decimal(18,0) null
+	factura_total decimal(18,0) null,
+	factura_sucursal decimal(18,0) null
 )
 GO
 
@@ -360,12 +361,13 @@ GO
 
 CREATE PROCEDURE GDD.migrar_factura
 AS
-INSERT INTO GDD.FACTURA(factura_numero, factura_clie, factura_fecha, factura_total)
+INSERT INTO GDD.FACTURA(factura_numero, factura_clie, factura_fecha, factura_total, factura_sucursal)
 SELECT DISTINCT FACTURA_NRO, (SELECT clie_id FROM GDD.CLIENTE WHERE clie_dni = A.FAC_CLIENTE_DNI AND clie_apellido = A.FAC_CLIENTE_APELLIDO), 
-       A.FACTURA_FECHA, SUM(A.PRECIO_FACTURADO)
+       A.FACTURA_FECHA, SUM(A.PRECIO_FACTURADO), S.sucursal_id
 FROM gd_esquema.MAESTRA A
+	JOIN GDD.SUCURSAL S ON S.sucursal_direccion = A.FAC_SUCURSAL_DIRECCION
 WHERE FACTURA_NRO IS NOT NULL
-GROUP BY FACTURA_NRO, FACTURA_FECHA, FAC_CLIENTE_APELLIDO, FAC_CLIENTE_DNI
+GROUP BY FACTURA_NRO, FACTURA_FECHA, FAC_CLIENTE_APELLIDO, FAC_CLIENTE_DNI, S.sucursal_id
 GO
 
 IF EXISTS (SELECT name FROM sysobjects WHERE name='migrar_sucursal' AND type='p')
@@ -442,7 +444,7 @@ CREATE PROCEDURE GDD.migrar_compras
 AS
 INSERT INTO GDD.COMPRA(compra_clie,compra_fecha, compra_numero, compra_precio, compra_sucursal)
 SELECT DISTINCT (SELECT clie_id FROM GDD.Cliente WHERE M.CLIENTE_DNI = clie_dni AND M.CLIENTE_APELLIDO = clie_apellido),
-       M.COMPRA_FECHA, M.COMPRA_NRO, SUM(M.COMPRA_PRECIO), (SELECT sucursal_id from GDD.SUCURSAL where M.SUCURSAL_CIUDAD = sucursal_ciudad AND M.SUCURSAL_DIRECCION = sucursal_direccion)        
+       M.COMPRA_FECHA, M.COMPRA_NRO, SUM(distinct M.COMPRA_PRECIO), (SELECT sucursal_id from GDD.SUCURSAL where M.SUCURSAL_CIUDAD = sucursal_ciudad AND M.SUCURSAL_DIRECCION = sucursal_direccion)        
 FROM gd_esquema.MAESTRA M
 WHERE COMPRA_NRO IS NOT NULL
 GROUP BY M.COMPRA_FECHA, M.COMPRA_NRO, M.CLIENTE_DNI, M.CLIENTE_APELLIDO, M.SUCURSAL_CIUDAD, M.SUCURSAL_DIRECCION
@@ -488,8 +490,8 @@ EXEC GDD.migrar_tipo_caja
 EXEC GDD.migrar_tipo_transmision
 EXEC GDD.migrar_modelo
 EXEC GDD.migrar_cliente
-EXEC GDD.migrar_factura
 EXEC GDD.migrar_sucursal
+EXEC GDD.migrar_factura
 EXEC GDD.migrar_fabricante
 EXEC GDD.migrar_compras
 EXEC GDD.migrar_auto_parte
@@ -501,15 +503,3 @@ GO
 
 
 EXEC GDD.migrar_maestra
-
-/*
-select * from GDD.TIPO_AUTO
-select * from GDD.COMPRA
-select * from GDD.AUTO
-select * from GDD.AUTO_PARTE
-select * from GDD.ITEM_COMPRA
-select * from GDD.ITEM_FACTURA
-select * from GDD.ITEM_FACTURA_AUTO
-select * from GDD.FACTURA
-select * from GDD.SUCURSAL
-*/
