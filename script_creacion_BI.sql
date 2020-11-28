@@ -13,10 +13,10 @@ GO
 CREATE FUNCTION GDD.CALCULAR_RANGO_EDAD(@edad INT)
 RETURNS NVARCHAR(50)
 AS BEGIN
-	RETURN CASE WHEN @edad < 18 THEN '< 18 años'
-		WHEN @edad >= 18 AND @edad < 30 THEN '18-30 años'
-		WHEN @edad >= 31 AND @edad < 50 THEN '31-50 años'
-		ELSE '> 50 años' END
+	RETURN CASE WHEN @edad < 18 THEN '< 18 aÃ±os'
+		WHEN @edad >= 18 AND @edad < 30 THEN '18-30 aÃ±os'
+		WHEN @edad >= 31 AND @edad < 50 THEN '31-50 aÃ±os'
+		ELSE '> 50 aÃ±os' END
 END
 GO
 
@@ -30,7 +30,7 @@ AS BEGIN
 END
 GO
 
------------------------------------------Creación de tablas para dimensiones-----------------------------------------
+-----------------------------------------CreaciÃ³n de tablas para dimensiones-----------------------------------------
 CREATE PROCEDURE GDD.CREAR_DIMENSIONES
 AS BEGIN
 	CREATE TABLE GDD.BI_Dim_Tiempo (
@@ -106,7 +106,7 @@ END
 GO
 
 
------------------------------------------Creación de tablas para dimensiones hechos-----------------------------------------
+-----------------------------------------CreaciÃ³n de tablas para dimensiones hechos-----------------------------------------
 CREATE PROCEDURE GDD.CREAR_HECHOS
 AS BEGIN
 	CREATE TABLE GDD.BI_Fact_Compra_Automoviles(
@@ -576,7 +576,6 @@ AS BEGIN
 		JOIN GDD.ITEM_FACTURA I ON I.item_factura_auto_parte = A.autoParte_id
 		JOIN GDD.FACTURA F ON F.factura_id = I.factura
 		JOIN GDD.ITEM_COMPRA IC ON IC.item_compra_auto_parte = A.autoParte_id
-		JOIN GDD.COMPRA C ON C.compra_id = IC.compra AND C.compra_sucursal = F.factura_sucursal
 
 		JOIN GDD.BI_Dim_Tiempo T ON T.tiem_anio = YEAR(F.factura_fecha) AND T.tiem_mes = MONTH(F.factura_fecha)
 		JOIN GDD.BI_Dim_Cliente DC ON DC.clie_id = F.factura_clie
@@ -589,12 +588,6 @@ AS BEGIN
 			JOIN GDD.BI_Dim_TipoTransmision DTT ON DTT.tipoTransmision_id = M.modelo_tipo_transmision
 		JOIN GDD.BI_Dim_Potencia DP ON DP.potencia_rango = GDD.CALCULAR_POTENCIA(M.modelo_potencia)
 		JOIN GDD.BI_Dim_Fabricante DF ON DF.fabr_id = A.autoParte_fabricante
-	
-	WHERE C.compra_id = (SELECT TOP 1 C2.compra_id FROM GDD.COMPRA C2
-								JOIN GDD.ITEM_COMPRA IC2 ON IC2.compra = C2.compra_id
-							WHERE C2.compra_sucursal = F.factura_sucursal
-								AND IC2.item_compra_auto_parte = A.autoParte_id
-							ORDER BY C2.compra_fecha)
 
 	GROUP BY T.tiem_id, DC.clie_id, DS.sucu_id, DM.mode_codigo, DTA.tipoAutomovil_id, DTC.tipoCaja_id, 
 			DTM.tipoMotor_id, DTT.tipoTransmision_id, DP.potencia_id, A.autoParte_id, DF.fabr_id
