@@ -150,7 +150,6 @@ AS BEGIN
 		modelo decimal(18,0) not null,
 		tipoAutomovil decimal(18,0) not null,
 		tipoCaja decimal(18,0) not null,
-		--???cantidadCambios INT not null,
 		tipoMotor decimal(18,0) not null,
 		tipoTransmision decimal(18,0) not null,
 		potencia decimal(18,0) not null,
@@ -168,7 +167,6 @@ AS BEGIN
 		modelo decimal(18,0) not null,
 		tipoAutomovil decimal(18,0) not null,
 		tipoCaja decimal(18,0) not null,
-		--???cantidadCambios INT not null,
 		tipoMotor decimal(18,0) not null,
 		tipoTransmision decimal(18,0) not null,
 		potencia decimal(18,0) not null,
@@ -177,7 +175,6 @@ AS BEGIN
 
 		precio_promedio_vendido decimal(18,2) null,
 		ganancia decimal(18,2) null,
-		promedio_tiempo_en_stock decimal(18,2) null,
 		stock int null
 	)
 END
@@ -240,10 +237,6 @@ AS BEGIN
 
 	ALTER TABLE GDD.BI_Dim_AutoParte
 	ADD CONSTRAINT PK_Dim_AutoParte PRIMARY KEY(autoParte_id)
-
-	--TODO
-	--ALTER TABLE GDD.BI_Dim_RubroAutoParte
-	--ADD CONSTRAINT PK_Dim_RubroAutoParte PRIMARY KEY()
 END
 GO
 
@@ -335,8 +328,6 @@ AS BEGIN
 	ALTER TABLE GDD.BI_Fact_Compra_Auto_Partes
 	ADD CONSTRAINT FK_Fact_Compra_Auto_Partes_TipoCaja FOREIGN KEY(tipoCaja) REFERENCES GDD.BI_Dim_TipoCajaCambios(tipoCaja_id)
 
-	--TODO: FK cantidad cambios
-
 	ALTER TABLE GDD.BI_Fact_Compra_Auto_Partes
 	ADD CONSTRAINT FK_Fact_Compra_Auto_Partes_TipoTransmision FOREIGN KEY(tipoTransmision) REFERENCES GDD.BI_Dim_TipoTransmision(tipoTransmision_id)
 
@@ -372,8 +363,6 @@ AS BEGIN
 
 	ALTER TABLE GDD.BI_Fact_Ventas_Auto_Partes
 	ADD CONSTRAINT FK_Fact_Ventas_Auto_Partes_TipoCaja FOREIGN KEY(tipoCaja) REFERENCES GDD.BI_Dim_TipoCajaCambios(tipoCaja_id)
-
-	--TODO: FK cantidad cambios
 
 	ALTER TABLE GDD.BI_Fact_Ventas_Auto_Partes
 	ADD CONSTRAINT FK_Fact_Ventas_Auto_Partes_TipoTransmision FOREIGN KEY(tipoTransmision) REFERENCES GDD.BI_Dim_TipoTransmision(tipoTransmision_id)
@@ -563,6 +552,8 @@ AS BEGIN
 		GROUP BY T.tiem_id, DC.clie_id, DS.sucu_id, DM.mode_codigo, DTA.tipoAutomovil_id, DTC.tipoCaja_id, 
 			DTM.tipoMotor_id, DTT.tipoTransmision_id, DP.potencia_id, A.autoParte_id, DF.fabr_id
 
+
+
 	INSERT INTO GDD.BI_Fact_Ventas_Auto_Partes
 	SELECT
 			T.tiem_id,
@@ -579,8 +570,7 @@ AS BEGIN
 
 			AVG(I.item_precio),
 			SUM(I.item_precio - IC.item_compra_precio),
-			ABS(AVG(DATEDIFF(day, C.compra_fecha, F.factura_fecha))),
-			SUM(I.item_cantidad)
+			SUM(distinct IC.item_compra_cant)
 
 	FROM GDD.BI_Dim_AutoParte A
 		JOIN GDD.ITEM_FACTURA I ON I.item_factura_auto_parte = A.autoParte_id
@@ -624,3 +614,4 @@ EXEC GDD.CREAR_FK
 EXEC GDD.CARGAR_DIMENSIONES
 EXEC GDD.CARGAR_HECHOS_AUTOMOVILES
 EXEC GDD.CARGAR_HECHOS_AUTO_PARTES
+
