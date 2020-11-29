@@ -73,10 +73,6 @@ AS BEGIN
 		tipoCaja_desc nvarchar(255) null
 	)
 
-	--CREATE TABLE GDD.BI_Dim_CantidadCambios(
-		--TODO ???????
-	--)
-
 	CREATE TABLE GDD.BI_Dim_TipoMotor(
 		tipoMotor_id decimal(18,0) not null,
 		tipoMotor_desc nvarchar(255) null
@@ -99,9 +95,6 @@ AS BEGIN
 		autoParte_modelo decimal(18,0) null
 	)
 
-	--CREATE TABLE GDD.BI_Dim_RubroAutoParte(
-		--TODO ?????????????
-	--)
 END
 GO
 
@@ -116,7 +109,6 @@ AS BEGIN
 		modelo decimal(18,0) not null,
 		tipoAutomovil decimal(18,0) not null,
 		tipoCaja decimal(18,0) not null,
-		--???cantidadCambios INT not null,
 		tipoMotor decimal(18,0) not null,
 		tipoTransmision decimal(18,0) not null,
 		potencia decimal(18,0) not null,
@@ -132,7 +124,6 @@ AS BEGIN
 		modelo decimal(18,0) not null,
 		tipoAutomovil decimal(18,0) not null,
 		tipoCaja decimal(18,0) not null,
-		--???cantidadCambios INT not null,
 		tipoMotor decimal(18,0) not null,
 		tipoTransmision decimal(18,0) not null,
 		potencia decimal(18,0) not null,
@@ -222,10 +213,6 @@ AS BEGIN
 	ALTER TABLE GDD.BI_Dim_TipoCajaCambios
 	ADD CONSTRAINT PK_Dim_TipoCajaCambios PRIMARY KEY(tipoCaja_id)
 
-	--TODO
-	--ALTER TABLE BI_GDD.Dim_CantidadCambios
-	--ADD CONSTRAINT PK_Dim_CantidadCambios PRIMARY KEY()
-
 	ALTER TABLE GDD.BI_Dim_TipoMotor
 	ADD CONSTRAINT PK_Dim_TipoMotor PRIMARY KEY(tipoMotor_id)
 
@@ -263,8 +250,6 @@ AS BEGIN
 	ALTER TABLE GDD.BI_Fact_Compra_Automoviles
 	ADD CONSTRAINT FK_Fact_Compra_Automoviles_TipoCaja FOREIGN KEY(tipoCaja) REFERENCES GDD.BI_Dim_TipoCajaCambios(tipoCaja_id)
 
-	--TODO: FK cantidad cambios
-
 	ALTER TABLE GDD.BI_Fact_Compra_Automoviles
 	ADD CONSTRAINT FK_Fact_Compra_Automoviles_TipoTransmision FOREIGN KEY(tipoTransmision) REFERENCES GDD.BI_Dim_TipoTransmision(tipoTransmision_id)
 
@@ -294,8 +279,6 @@ AS BEGIN
 
 	ALTER TABLE GDD.BI_Fact_Ventas_Automoviles
 	ADD CONSTRAINT FK_Fact_Venta_Automoviles_TipoCaja FOREIGN KEY(tipoCaja) REFERENCES GDD.BI_Dim_TipoCajaCambios(tipoCaja_id)
-
-	--TODO: FK cantidad cambios
 
 	ALTER TABLE GDD.BI_Fact_Ventas_Automoviles
 	ADD CONSTRAINT FK_Fact_Venta_Automoviles_TipoTransmision FOREIGN KEY(tipoTransmision) REFERENCES GDD.BI_Dim_TipoTransmision(tipoTransmision_id)
@@ -402,7 +385,6 @@ AS BEGIN
 	INSERT INTO GDD.BI_Dim_Sucursal
 	SELECT * FROM GDD.SUCURSAL
 
-	--TODO INSERT MODELO
 	INSERT INTO GDD.BI_Dim_Modelo
 	SELECT modelo_codigo, modelo_nombre FROM GDD.MODELO
 
@@ -414,8 +396,6 @@ AS BEGIN
 
 	INSERT INTO GDD.BI_Dim_TipoCajaCambios
 	SELECT * FROM GDD.TIPO_CAJA
-
-	--TODO INSERT CANTIDAD CAMBIOS
 
 	INSERT INTO GDD.BI_Dim_TipoMotor
 	SELECT * FROM GDD.TIPO_MOTOR
@@ -431,7 +411,6 @@ AS BEGIN
 	INSERT INTO GDD.BI_Dim_AutoParte
 	SELECT * FROM GDD.AUTO_PARTE
 
-	--TODO INSERT RUBRO AUTO PARTE
 END
 GO
 
